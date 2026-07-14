@@ -132,14 +132,17 @@ final class ActionViewModel: ObservableObject {
         lastKnownDay = start
 
         let descriptor = FetchDescriptor<ActionTask>(
-            predicate: #Predicate {
-                $0.resolvedAt != nil && $0.resolvedAt! >= start && $0.resolvedAt! < end
-            },
             sortBy: [SortDescriptor(\.resolvedAt, order: .reverse)]
         )
 
         do {
-            let resolved = try context.fetch(descriptor)
+            // SwiftData cannot reliably translate a force-unwrapped optional Date
+            // inside #Predicate on every supported iOS version. Keep the fetch
+            // simple and apply the day boundary in memory; an MVP has few records.
+            let resolved = try context.fetch(descriptor).filter { task in
+                guard let resolvedAt = task.resolvedAt else { return false }
+                return resolvedAt >= start && resolvedAt < end
+            }
             let madeReality = resolved.filter { $0.outcome == .madeReality }
             dailyStats = DailyStats(
                 madeRealityCount: madeReality.count,
