@@ -6,6 +6,7 @@ struct HomeView: View {
 
     @State private var isCreatingTask = false
     @State private var isConfirmingEscape = false
+    @State private var isShowingHistory = false
 
     var body: some View {
         ZStack {
@@ -45,6 +46,12 @@ struct HomeView: View {
             .presentationDetents([.height(340)])
             .presentationDragIndicator(.hidden)
         }
+        .sheet(isPresented: $isShowingHistory) {
+            HistoryView(
+                records: viewModel.historyRecords,
+                onDelete: { viewModel.deleteHistoryRecord($0) }
+            )
+        }
         .confirmationDialog(
             "放弃不是暂停。它会被记作一次逃跑。",
             isPresented: $isConfirmingEscape,
@@ -67,9 +74,9 @@ struct HomeView: View {
         }
         .task {
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(30))
+                try? await Task.sleep(for: .seconds(1))
                 guard !Task.isCancelled else { return }
-                viewModel.refreshForClockTick(now: .now)
+                viewModel.refreshForClockTick()
             }
         }
     }
@@ -88,6 +95,19 @@ struct HomeView: View {
             }
 
             Spacer()
+
+            Button {
+                isShowingHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 42, height: 42)
+                    .background(Color.noExcusePanel)
+                    .overlay(Rectangle().stroke(Color.noExcuseBorder, lineWidth: 1))
+            }
+            .accessibilityLabel("查看历史")
+            .padding(.trailing, 10)
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text("今日行动值")

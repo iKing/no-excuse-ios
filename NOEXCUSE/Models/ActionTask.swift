@@ -1,6 +1,18 @@
 import Foundation
 import SwiftData
 
+struct ClockSnapshot: Equatable {
+    let date: Date
+    let systemUptime: TimeInterval
+
+    static var now: ClockSnapshot {
+        ClockSnapshot(
+            date: .now,
+            systemUptime: ProcessInfo.processInfo.systemUptime
+        )
+    }
+}
+
 enum TaskOutcome: String, Codable {
     case active
     case madeReality
@@ -15,6 +27,9 @@ final class ActionTask {
     var duration: TimeInterval
     var elapsedBeforeCurrentRun: TimeInterval
     var runningSince: Date?
+    var runningSystemUptime: TimeInterval?
+    var clockAnchorDate: Date?
+    var clockAnchorSystemUptime: TimeInterval?
     var notificationIdentifier: String?
     var outcomeRawValue: String
     var resolvedAt: Date?
@@ -27,6 +42,9 @@ final class ActionTask {
         self.duration = duration
         elapsedBeforeCurrentRun = 0
         runningSince = nil
+        runningSystemUptime = nil
+        clockAnchorDate = nil
+        clockAnchorSystemUptime = nil
         notificationIdentifier = nil
         outcomeRawValue = TaskOutcome.active.rawValue
     }
@@ -37,20 +55,52 @@ final class ActionTask {
     }
 
     var isRunning: Bool {
-        outcome == .active && runningSince != nil && remainingTime(at: .now) > 0
+        outcome == .active && runningSince != nil && remainingTime(at: ClockSnapshot.now) > 0
     }
 
-    func elapsedTime(at date: Date) -> TimeInterval {
-        let currentRun = runningSince.map { max(0, date.timeIntervalSince($0)) } ?? 0
+    func elapsedTime(at snapshot: ClockSnapshot) -> TimeInterval {
+        guard runningSince != nil else { return min(duration, elapsedBeforeCurrentRun) }
+        guard let runningSystemUptime,
+              snapshot.systemUptime >= runningSystemUptime else {
+            // A missing or reset monotonic anchor is ambiguous. Freeze until the
+            // view model safely pauses the action instead of trusting wall time.
+            return min(duration, elapsedBeforeCurrentRun)
+        }
+
+        let currentRun = snapshot.systemUptime - runningSystemUptime
         return min(duration, elapsedBeforeCurrentRun + currentRun)
     }
 
-    func remainingTime(at date: Date) -> TimeInterval {
-        max(0, duration - elapsedTime(at: date))
+    func remainingTime(at snapshot: ClockSnapshot) -> TimeInterval {
+        max(0, duration - elapsedTime(at: snapshot))
     }
 
-    func pause(at date: Date) {
-        elapsedBeforeCurrentRun = elapsedTime(at: date)
+    func begin(at snapshot: ClockSnapshot) {
+        runningSince = snapshot.date
+        runningSystemUptime = snapshot.systemUptime
+        clockAnchorDate = snapshot.date
+        clockAnchorSystemUptime = snapshot.systemUptime
+    }
+
+    func hasClockDiscontinuity(
+        at snapshot: ClockSnapshot,
+        tolerance: TimeInterval
+    ) -> Bool {
+        guard runningSince != nil else { return false }
+        guard let clockAnchorDate, let clockAnchorSystemUptime else { return true }
+
+        let uptimeDelta = snapshot.systemUptime - clockAnchorSystemUptime
+        guard uptimeDelta >= 0 else { return true }
+
+        let expectedDate = clockAnchorDate.addingTimeInterval(uptimeDelta)
+        return abs(snapshot.date.timeIntervalSince(expectedDate)) > tolerance
+    }
+
+    func pause(at snapshot: ClockSnapshot) {
+        elapsedBeforeCurrentRun = elapsedTime(at: snapshot)
         runningSince = nil
+        runningSystemUptime = nil
+        clockAnchorDate = nil
+        clockAnchorSystemUptime = nil
     }
 }

@@ -11,7 +11,10 @@ struct ActiveTaskView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.25)) { context in
-            let remaining = task.remainingTime(at: context.date)
+            let remaining = task.remainingTime(at: ClockSnapshot(
+                date: context.date,
+                systemUptime: ProcessInfo.processInfo.systemUptime
+            ))
             let isFinished = remaining <= 0
 
             VStack(spacing: 0) {

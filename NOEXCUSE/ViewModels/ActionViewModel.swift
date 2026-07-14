@@ -19,12 +19,14 @@ struct DailyStats {
 final class ActionViewModel: ObservableObject {
     @Published private(set) var activeTask: ActionTask?
     @Published private(set) var dailyStats = DailyStats.empty
+    @Published private(set) var historyRecords: [ActionTask] = []
     @Published var errorMessage: String?
 
     private let context: ModelContext
     private let notifications: any NotificationScheduling
     private var notificationSchedulingTask: Task<Void, Never>?
     private var lastKnownDay = Calendar.current.startOfDay(for: .now)
+    private let clockTolerance: TimeInterval = 5
 
     init(
         context: ModelContext,
@@ -35,14 +37,17 @@ final class ActionViewModel: ObservableObject {
         refresh()
     }
 
-    func refresh(now: Date = .now) {
+    func refresh(snapshot: ClockSnapshot = .now) {
         refreshActiveTask()
-        refreshDailyStats(now: now)
+        validateClockIntegrity(snapshot: snapshot)
+        refreshDailyStats(now: snapshot.date)
+        refreshHistory()
     }
 
-    func refreshForClockTick(now: Date) {
-        if Calendar.current.startOfDay(for: now) != lastKnownDay {
-            refreshDailyStats(now: now)
+    func refreshForClockTick(snapshot: ClockSnapshot = .now) {
+        validateClockIntegrity(snapshot: snapshot)
+        if Calendar.current.startOfDay(for: snapshot.date) != lastKnownDay {
+            refreshDailyStats(now: snapshot.date)
         }
     }
 
@@ -57,13 +62,13 @@ final class ActionViewModel: ObservableObject {
         return save()
     }
 
-    func startOrResume(now: Date = .now) {
+    func startOrResume(snapshot: ClockSnapshot = .now) {
         guard let task = activeTask,
               task.outcome == .active,
               task.runningSince == nil,
-              task.remainingTime(at: now) > 0 else { return }
+              task.remainingTime(at: snapshot) > 0 else { return }
 
-        task.runningSince = now
+        task.begin(at: snapshot)
         let notificationIdentifier = "\(task.id.uuidString).\(UUID().uuidString)"
         task.notificationIdentifier = notificationIdentifier
         guard save() else { return }
@@ -79,7 +84,16 @@ final class ActionViewModel: ObservableObject {
                   task.runningSince != nil,
                   task.notificationIdentifier == notificationIdentifier else { return }
 
-            let currentRemaining = task.remainingTime(at: .now)
+            let currentSnapshot = ClockSnapshot.now
+            guard !task.hasClockDiscontinuity(
+                at: currentSnapshot,
+                tolerance: clockTolerance
+            ) else {
+                interruptForClockDiscontinuity(task, snapshot: currentSnapshot)
+                return
+            }
+
+            let currentRemaining = task.remainingTime(at: currentSnapshot)
             guard currentRemaining > 0 else { return }
 
             await notifications.scheduleTimerEnd(
@@ -96,45 +110,57 @@ final class ActionViewModel: ObservableObject {
         }
     }
 
-    func pause(now: Date = .now) {
+    func pause(snapshot: ClockSnapshot = .now) {
         guard let task = activeTask, task.runningSince != nil else { return }
-        task.pause(at: now)
+        task.pause(at: snapshot)
         cancelNotification(for: task)
         save()
     }
 
-    func markMadeReality(_ text: String, now: Date = .now) {
+    func markMadeReality(_ text: String, snapshot: ClockSnapshot = .now) {
         guard let task = activeTask,
-              task.remainingTime(at: now) <= 0 else { return }
+              validateClockIntegrity(snapshot: snapshot),
+              task.remainingTime(at: snapshot) <= 0 else { return }
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        resolve(task, as: .madeReality, realityText: trimmed, now: now)
+        resolve(task, as: .madeReality, realityText: trimmed, snapshot: snapshot)
     }
 
-    func markEscaped(now: Date = .now) {
-        guard let task = activeTask else { return }
-        resolve(task, as: .escaped, realityText: nil, now: now)
+    func markEscaped(snapshot: ClockSnapshot = .now) {
+        guard let task = activeTask,
+              validateClockIntegrity(snapshot: snapshot) else { return }
+        resolve(task, as: .escaped, realityText: nil, snapshot: snapshot)
+    }
+
+    func deleteHistoryRecord(_ record: ActionTask, now: Date = .now) {
+        guard record.outcome != .active else { return }
+        context.delete(record)
+        if save() {
+            refreshDailyStats(now: now)
+            refreshHistory()
+        }
     }
 
     private func resolve(
         _ task: ActionTask,
         as outcome: TaskOutcome,
         realityText: String?,
-        now: Date
+        snapshot: ClockSnapshot
     ) {
         if task.runningSince != nil {
-            task.pause(at: now)
+            task.pause(at: snapshot)
         }
         task.outcome = outcome
-        task.resolvedAt = now
+        task.resolvedAt = snapshot.date
         task.realityText = realityText
         cancelNotification(for: task)
 
         if save() {
             activeTask = nil
-            refreshDailyStats(now: now)
+            refreshDailyStats(now: snapshot.date)
+            refreshHistory()
         }
     }
 
@@ -179,6 +205,42 @@ final class ActionViewModel: ObservableObject {
         } catch {
             errorMessage = "无法读取今日记录：\(error.localizedDescription)"
         }
+    }
+
+    private func refreshHistory() {
+        let descriptor = FetchDescriptor<ActionTask>(
+            sortBy: [SortDescriptor(\.resolvedAt, order: .reverse)]
+        )
+
+        do {
+            historyRecords = try context.fetch(descriptor).filter {
+                $0.outcome != .active && $0.resolvedAt != nil
+            }
+        } catch {
+            errorMessage = "无法读取历史记录：\(error.localizedDescription)"
+        }
+    }
+
+    @discardableResult
+    private func validateClockIntegrity(snapshot: ClockSnapshot) -> Bool {
+        guard let task = activeTask, task.runningSince != nil else { return true }
+        guard task.hasClockDiscontinuity(
+            at: snapshot,
+            tolerance: clockTolerance
+        ) else { return true }
+
+        interruptForClockDiscontinuity(task, snapshot: snapshot)
+        return false
+    }
+
+    private func interruptForClockDiscontinuity(
+        _ task: ActionTask,
+        snapshot: ClockSnapshot
+    ) {
+        task.pause(at: snapshot)
+        cancelNotification(for: task)
+        save()
+        errorMessage = "检测到系统时间跳变或设备重启。当前行动已安全暂停；修改日期不能推进计时。"
     }
 
     private func cancelNotification(for task: ActionTask) {
