@@ -1,17 +1,29 @@
 import Foundation
 import UserNotifications
 
-final class NotificationService {
+@MainActor
+protocol NotificationScheduling: AnyObject {
+    func requestAuthorization() async -> Bool
+    func scheduleTimerEnd(identifier: String, after interval: TimeInterval) async
+    func cancel(identifiers: [String])
+}
+
+@MainActor
+final class NotificationService: NotificationScheduling {
     static let shared = NotificationService()
 
     private init() {}
 
-    func requestAuthorization() async {
-        _ = try? await UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound])
+    func requestAuthorization() async -> Bool {
+        do {
+            return try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound])
+        } catch {
+            return false
+        }
     }
 
-    func scheduleTimerEnd(for task: ActionTask, after interval: TimeInterval) async {
+    func scheduleTimerEnd(identifier: String, after interval: TimeInterval) async {
         guard interval > 0 else { return }
 
         let content = UNMutableNotificationContent()
@@ -24,16 +36,16 @@ final class NotificationService {
             repeats: false
         )
         let request = UNNotificationRequest(
-            identifier: task.id.uuidString,
+            identifier: identifier,
             content: content,
             trigger: trigger
         )
         try? await UNUserNotificationCenter.current().add(request)
     }
 
-    func cancel(for task: ActionTask) {
-        let identifier = task.id.uuidString
+    func cancel(identifiers: [String]) {
+        guard !identifiers.isEmpty else { return }
         UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: [identifier])
+            .removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 }

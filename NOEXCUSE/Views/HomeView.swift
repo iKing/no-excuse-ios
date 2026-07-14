@@ -65,6 +65,13 @@ struct HomeView: View {
                 viewModel.refresh()
             }
         }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                guard !Task.isCancelled else { return }
+                viewModel.refreshForClockTick(now: .now)
+            }
+        }
     }
 
     private var header: some View {

@@ -30,7 +30,7 @@ struct CreateTaskView: View {
                     .onSubmit(create)
 
                 Button(action: create) {
-                    Text("锁定并开始")
+                    Text("锁定行动")
                         .font(.system(size: 17, weight: .black))
                         .frame(maxWidth: .infinity)
                         .frame(height: 58)

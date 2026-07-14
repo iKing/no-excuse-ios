@@ -17,7 +17,18 @@
 		A10000000000000000000008 /* EmptyTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* EmptyTaskView.swift */; };
 		A10000000000000000000009 /* DailyStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* DailyStatsView.swift */; };
 		A10000000000000000000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* Assets.xcassets */; };
+		A10000000000000000000011 /* ActionViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* ActionViewModelTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		G10000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E10000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E10000000000000000000001;
+			remoteInfo = NOEXCUSE;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		B10000000000000000000000 /* NOEXCUSE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NOEXCUSE.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -31,10 +42,19 @@
 		B10000000000000000000008 /* EmptyTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyTaskView.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* DailyStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyStatsView.swift; sourceTree = "<group>"; };
 		B10000000000000000000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B10000000000000000000011 /* ActionViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionViewModelTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000012 /* NOEXCUSETests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NOEXCUSETests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		C10000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -48,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				D10000000000000000000001 /* NOEXCUSE */,
+				D10000000000000000000007 /* NOEXCUSETests */,
 				D10000000000000000000002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -69,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000000 /* NOEXCUSE.app */,
+				B10000000000000000000012 /* NOEXCUSETests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,6 +131,14 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		D10000000000000000000007 /* NOEXCUSETests */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000011 /* ActionViewModelTests.swift */,
+			);
+			path = NOEXCUSETests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -129,6 +159,24 @@
 			productReference = B10000000000000000000000 /* NOEXCUSE.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E10000000000000000000002 /* NOEXCUSETests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000003 /* Build configuration list for PBXNativeTarget "NOEXCUSETests" */;
+			buildPhases = (
+				C10000000000000000000004 /* Sources */,
+				C10000000000000000000005 /* Frameworks */,
+				C10000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				G10000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = NOEXCUSETests;
+			productName = NOEXCUSETests;
+			productReference = B10000000000000000000012 /* NOEXCUSETests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -141,6 +189,10 @@
 				TargetAttributes = {
 					E10000000000000000000001 = {
 						CreatedOnToolsVersion = 26.0;
+					};
+					E10000000000000000000002 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = E10000000000000000000001;
 					};
 				};
 			};
@@ -159,6 +211,7 @@
 			projectRoot = "";
 			targets = (
 				E10000000000000000000001 /* NOEXCUSE */,
+				E10000000000000000000002 /* NOEXCUSETests */,
 			);
 		};
 /* End PBXProject section */
@@ -169,6 +222,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000010 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C10000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -191,7 +251,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C10000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000011 /* ActionViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		G10000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E10000000000000000000001 /* NOEXCUSE */;
+			targetProxy = G10000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F10000000000000000000010 /* Debug */ = {
@@ -369,6 +445,40 @@
 			};
 			name = Release;
 		};
+		F10000000000000000000022 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iking.noexcuse.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NOEXCUSE.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NOEXCUSE";
+			};
+			name = Debug;
+		};
+		F10000000000000000000023 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.iking.noexcuse.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NOEXCUSE.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NOEXCUSE";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -386,6 +496,15 @@
 			buildConfigurations = (
 				F10000000000000000000020 /* Debug */,
 				F10000000000000000000021 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10000000000000000000003 /* Build configuration list for PBXNativeTarget "NOEXCUSETests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000022 /* Debug */,
+				F10000000000000000000023 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

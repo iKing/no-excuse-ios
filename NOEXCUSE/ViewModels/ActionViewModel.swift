@@ -22,12 +22,16 @@ final class ActionViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let context: ModelContext
-    private let notifications: NotificationService
+    private let notifications: any NotificationScheduling
+    private var notificationSchedulingTask: Task<Void, Never>?
     private var lastKnownDay = Calendar.current.startOfDay(for: .now)
 
-    init(context: ModelContext, notifications: NotificationService = .shared) {
+    init(
+        context: ModelContext,
+        notifications: (any NotificationScheduling)? = nil
+    ) {
         self.context = context
-        self.notifications = notifications
+        self.notifications = notifications ?? NotificationService.shared
         refresh()
     }
 
@@ -60,19 +64,42 @@ final class ActionViewModel: ObservableObject {
               task.remainingTime(at: now) > 0 else { return }
 
         task.runningSince = now
+        let notificationIdentifier = "\(task.id.uuidString).\(UUID().uuidString)"
+        task.notificationIdentifier = notificationIdentifier
         guard save() else { return }
 
-        Task {
-            await notifications.requestAuthorization()
+        notificationSchedulingTask?.cancel()
+        notificationSchedulingTask = Task { [weak self, weak task] in
+            guard let self, let task else { return }
+            let authorized = await notifications.requestAuthorization()
+            guard authorized,
+                  !Task.isCancelled,
+                  activeTask?.id == task.id,
+                  task.outcome == .active,
+                  task.runningSince != nil,
+                  task.notificationIdentifier == notificationIdentifier else { return }
+
             let currentRemaining = task.remainingTime(at: .now)
-            await notifications.scheduleTimerEnd(for: task, after: currentRemaining)
+            guard currentRemaining > 0 else { return }
+
+            await notifications.scheduleTimerEnd(
+                identifier: notificationIdentifier,
+                after: currentRemaining
+            )
+
+            if Task.isCancelled
+                || activeTask?.id != task.id
+                || task.runningSince == nil
+                || task.notificationIdentifier != notificationIdentifier {
+                notifications.cancel(identifiers: [notificationIdentifier])
+            }
         }
     }
 
     func pause(now: Date = .now) {
         guard let task = activeTask, task.runningSince != nil else { return }
         task.pause(at: now)
-        notifications.cancel(for: task)
+        cancelNotification(for: task)
         save()
     }
 
@@ -103,7 +130,7 @@ final class ActionViewModel: ObservableObject {
         task.outcome = outcome
         task.resolvedAt = now
         task.realityText = realityText
-        notifications.cancel(for: task)
+        cancelNotification(for: task)
 
         if save() {
             activeTask = nil
@@ -152,6 +179,16 @@ final class ActionViewModel: ObservableObject {
         } catch {
             errorMessage = "无法读取今日记录：\(error.localizedDescription)"
         }
+    }
+
+    private func cancelNotification(for task: ActionTask) {
+        notificationSchedulingTask?.cancel()
+        notificationSchedulingTask = nil
+
+        let identifiers = [task.notificationIdentifier, task.id.uuidString]
+            .compactMap { $0 }
+        task.notificationIdentifier = nil
+        notifications.cancel(identifiers: identifiers)
     }
 
     @discardableResult

@@ -15,6 +15,7 @@ final class ActionTask {
     var duration: TimeInterval
     var elapsedBeforeCurrentRun: TimeInterval
     var runningSince: Date?
+    var notificationIdentifier: String?
     var outcomeRawValue: String
     var resolvedAt: Date?
     var realityText: String?
@@ -26,6 +27,7 @@ final class ActionTask {
         self.duration = duration
         elapsedBeforeCurrentRun = 0
         runningSince = nil
+        notificationIdentifier = nil
         outcomeRawValue = TaskOutcome.active.rawValue
     }
 
